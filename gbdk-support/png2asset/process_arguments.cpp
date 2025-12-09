@@ -471,6 +471,11 @@ int processPNG2AssetArguments(int argc, char* argv[], PNG2AssetArguments* args) 
         return EXIT_FAILURE;
     }
 
+    // When using flexible tile matching, we need to export the tiles from the source tileset
+    if (args->flexible_tile_matching && args->source_tilesets.size() > 0) {
+        args->includeTileData = true;
+    }
+
     return EXIT_SUCCESS;
 }
 
