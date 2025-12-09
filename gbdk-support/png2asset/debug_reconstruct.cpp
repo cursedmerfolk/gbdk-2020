@@ -50,6 +50,10 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
     printf("Tile dimensions: %dx%d\n", tile_w, tile_h);
     printf("Number of tiles in frame: %d\n", (int)sprite.size());
     
+    // Track accumulated position (metasprite offsets are relative to previous tile)
+    int current_x = pivot_x;
+    int current_y = pivot_y;
+    
     // Process each tile in the metasprite
     for (size_t i = 0; i < sprite.size(); ++i) {
         MTTile& mt = sprite[i];
@@ -67,9 +71,12 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
             continue;
         }
         
-        // Calculate position in image (relative to pivot)
-        int x_pos = pivot_x + mt.offset_x;
-        int y_pos = pivot_y + mt.offset_y;
+        // Accumulate relative offsets to get absolute position
+        current_x += mt.offset_x;
+        current_y += mt.offset_y;
+        
+        int x_pos = current_x;
+        int y_pos = current_y;
         
         // Extract flip flags and palette
         bool flip_x = (mt.props >> 6) & 1;
