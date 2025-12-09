@@ -245,10 +245,16 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData,
     // For each tile in the source tileset
     for (size_t tile_idx = 0; tile_idx < assetData->args->source_tileset_size; ++tile_idx) {
         const Tile& tile = assetData->tiles[tile_idx];
+
+        int tile_alpha_w = 0;
+        int tile_alpha_h = 0;
+        bool found_nontransparent;
         
         // Count non-transparent pixels in this tile
         int non_transparent_count = 0;
         for (int y = 0; y < tile_h; ++y) {
+            found_nontransparent = false;
+            int row_alpha_w = 0;
             for (int x = 0; x < tile_w; ++x) {
                 int tile_data_idx = y * tile_w + x;
                 unsigned char tile_color_idx = tile.data[tile_data_idx];
@@ -256,7 +262,17 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData,
                 unsigned char tile_a = assetData->image.palette[tile_palette_offset + 3];
                 if (tile_a != 0) {
                     non_transparent_count++;
+                    found_nontransparent = true;
                 }
+                else {
+                    row_alpha_w++;
+                }
+            }
+            if (!found_nontransparent) {
+                tile_alpha_h++;
+            }
+            else if (row_alpha_w > tile_alpha_w) {
+                tile_alpha_w = row_alpha_w;
             }
         }
         
@@ -265,10 +281,12 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData,
             printf("Source tile %zu has palette index: %d, non-transparent pixels: %d\n", 
                    tile_idx, tile.pal, non_transparent_count);
         }
+
+        // 
         
         // Scan every pixel position in the frame
-        for (int y = frame_y; y <= frame_y + frame_h; ++y) {
-            for (int x = frame_x; x <= frame_x + frame_w; ++x) {
+        for (int y = frame_y; y <= frame_y + frame_h - tile_alpha_h; ++y) {
+            for (int x = frame_x; x <= frame_x + frame_w - tile_alpha_w; ++x) {
                 unsigned char props = assetData->args->props_default;
                 bool matched = false;
                 
@@ -331,6 +349,27 @@ void GetMetaSpriteFlexible(int _x, int _y,
     // Convert matches to MTTiles
     for (const TileMatch& match : matches) {
         size_t idx = match.tile_idx;
+        
+        // Debug: check if tile is completely outside the frame
+        if (assetData->args->debug_reconstruct) {
+            int tile_w = assetData->image.tile_w;
+            int tile_h = assetData->image.tile_h;
+            int tile_right = match.x + tile_w;
+            int tile_bottom = match.y + tile_h;
+            int frame_right = _x + _w;
+            int frame_bottom = _y + _h;
+            
+            // Tile is completely outside if:
+            // - tile_right <= frame_left OR tile_left >= frame_right (horizontal)
+            // - tile_bottom <= frame_top OR tile_top >= frame_bottom (vertical)
+            bool completely_outside = (tile_right <= _x || match.x >= frame_right ||
+                                      tile_bottom <= _y || match.y >= frame_bottom);
+            
+            if (completely_outside) {
+                printf("WARNING: Tile %zu at position (%d,%d) is completely outside frame bounds (%d,%d,%d,%d)\n",
+                       idx, match.x, match.y, _x, _y, frame_right, frame_bottom);
+            }
+        }
         
         // Scale up index based on 8x8 tiles-per-hardware sprite
         if(assetData->args->sprite_mode == SPR_8x16)
