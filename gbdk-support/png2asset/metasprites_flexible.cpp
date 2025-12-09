@@ -277,13 +277,11 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData,
         }
         
         // Debug: print palette for first few tiles
-        if (assetData->args->debug_reconstruct && tile_idx < 10) {
+        if (!assetData->args->frame_debug_folder.empty() && tile_idx < 10) {
             printf("Source tile %zu has palette index: %d, non-transparent pixels: %d\n", 
                    tile_idx, tile.pal, non_transparent_count);
         }
 
-        // 
-        
         // Scan every pixel position in the frame
         for (int y = frame_y; y <= frame_y + frame_h - tile_alpha_h; ++y) {
             for (int x = frame_x; x <= frame_x + frame_w - tile_alpha_w; ++x) {
@@ -351,7 +349,7 @@ void GetMetaSpriteFlexible(int _x, int _y,
         size_t idx = match.tile_idx;
         
         // Debug: check if tile is completely outside the frame
-        if (assetData->args->debug_reconstruct) {
+        if (!assetData->args->frame_debug_folder.empty()) {
             int tile_w = assetData->image.tile_w;
             int tile_h = assetData->image.tile_h;
             int tile_right = match.x + tile_w;

@@ -92,7 +92,7 @@ static void initArguments(PNG2AssetArguments* args) {
     args->flip_tiles = true;
     args->flexible_tile_matching = false;
     args->match_threshold_pixels = -1;  // Will be calculated after tile size is known
-    args->debug_reconstruct = false;
+    args->frame_debug_folder = "";
 
     // args->errorCode;
     args->bank = BANK_NUM_UNSET;
@@ -157,7 +157,7 @@ void showHelp(void) {
         printf("-source_tileset     use source tileset (image with common tiles)\n");
         printf("-flexible_tile_matching match tiles from source tileset at any pixel position (not grid-aligned)\n");
         printf("-match_threshold <0.0-1.0> percentage of pixels that must match (default 1.0 = 100%%)\n");
-        printf("-debug_reconstruct  output reconstructed PNG frames for debugging metasprite generation\n");
+        printf("-frame_debug <folder> output reconstructed PNG frames to specified folder for debugging\n");
         printf("-entity_tileset     (maps only) mark matching tiles counting from 255 down, entity patterns not exported\n");
         printf("-keep_duplicate_tiles   do not remove duplicate tiles (default: not enabled)\n");
         printf("-no_palettes        do not export palette data\n");
@@ -386,8 +386,15 @@ static int processArguments(int startIndex, int argc, const char* argv[], PNG2As
                 args->match_threshold_pixels = -(int)(threshold_percent * 1000.0f);  // Store as -1000*percent for later
             }
         }
-        else if(!strcmp(argv[i], "-debug_reconstruct")) {
-            args->debug_reconstruct = true;
+        else if(!strcmp(argv[i], "-frame_debug")) {
+            if ((i + 1) >= argc) {
+                printf("Error: -frame_debug requires a folder path, none specified\n");
+                return EXIT_FAILURE;
+            } else if (argv[i+1][0] == '-') {
+                printf("Error: next argument after -frame_debug looks like an option instead of a folder path (\"%s\")\n", argv[i + 1]);
+                return EXIT_FAILURE;
+            }
+            args->frame_debug_folder = argv[++i];
         }
         else {
             printf("Warning: Argument \"%s\" not recognized\n", argv[i]);
