@@ -54,6 +54,19 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
     int current_x = pivot_x;
     int current_y = pivot_y;
     
+    // Define colors for tile boundaries (excluding yellow, using 50% alpha)
+    // Cycle through: cyan, magenta, green, red, blue, orange
+    unsigned char box_colors[][3] = {
+        {0, 255, 255},   // Cyan
+        {255, 0, 255},   // Magenta
+        {0, 255, 0},     // Green
+        {255, 0, 0},     // Red
+        {0, 0, 255},     // Blue
+        {255, 128, 0}    // Orange
+    };
+    int num_colors = 6;
+    int color_idx = 0;
+    
     // Process each tile in the metasprite
     for (size_t i = 0; i < sprite.size(); ++i) {
         MTTile& mt = sprite[i];
@@ -136,6 +149,66 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
                 image_data[dst_idx + 3] = 255;          // A (opaque)
             }
         }
+        
+        // Draw colored box around the tile (50% transparency)
+        unsigned char* box_color = box_colors[color_idx];
+        
+        // Draw horizontal lines (top and bottom)
+        for (int tx = 0; tx < tile_w; ++tx) {
+            int dst_x = x_pos + tx;
+            
+            // Top edge
+            int dst_y_top = y_pos;
+            if (dst_x >= 0 && dst_x < img_w && dst_y_top >= 0 && dst_y_top < img_h) {
+                int dst_idx = (dst_y_top * img_w + dst_x) * 4;
+                // Blend 50% with existing pixel
+                image_data[dst_idx + 0] = (image_data[dst_idx + 0] + box_color[0]) / 2;
+                image_data[dst_idx + 1] = (image_data[dst_idx + 1] + box_color[1]) / 2;
+                image_data[dst_idx + 2] = (image_data[dst_idx + 2] + box_color[2]) / 2;
+                image_data[dst_idx + 3] = 255; // Opaque
+            }
+            
+            // Bottom edge
+            int dst_y_bottom = y_pos + tile_h - 1;
+            if (dst_x >= 0 && dst_x < img_w && dst_y_bottom >= 0 && dst_y_bottom < img_h) {
+                int dst_idx = (dst_y_bottom * img_w + dst_x) * 4;
+                // Blend 50% with existing pixel
+                image_data[dst_idx + 0] = (image_data[dst_idx + 0] + box_color[0]) / 2;
+                image_data[dst_idx + 1] = (image_data[dst_idx + 1] + box_color[1]) / 2;
+                image_data[dst_idx + 2] = (image_data[dst_idx + 2] + box_color[2]) / 2;
+                image_data[dst_idx + 3] = 255; // Opaque
+            }
+        }
+        
+        // Draw vertical lines (left and right)
+        for (int ty = 0; ty < tile_h; ++ty) {
+            int dst_y = y_pos + ty;
+            
+            // Left edge
+            int dst_x_left = x_pos;
+            if (dst_x_left >= 0 && dst_x_left < img_w && dst_y >= 0 && dst_y < img_h) {
+                int dst_idx = (dst_y * img_w + dst_x_left) * 4;
+                // Blend 50% with existing pixel
+                image_data[dst_idx + 0] = (image_data[dst_idx + 0] + box_color[0]) / 2;
+                image_data[dst_idx + 1] = (image_data[dst_idx + 1] + box_color[1]) / 2;
+                image_data[dst_idx + 2] = (image_data[dst_idx + 2] + box_color[2]) / 2;
+                image_data[dst_idx + 3] = 255; // Opaque
+            }
+            
+            // Right edge
+            int dst_x_right = x_pos + tile_w - 1;
+            if (dst_x_right >= 0 && dst_x_right < img_w && dst_y >= 0 && dst_y < img_h) {
+                int dst_idx = (dst_y * img_w + dst_x_right) * 4;
+                // Blend 50% with existing pixel
+                image_data[dst_idx + 0] = (image_data[dst_idx + 0] + box_color[0]) / 2;
+                image_data[dst_idx + 1] = (image_data[dst_idx + 1] + box_color[1]) / 2;
+                image_data[dst_idx + 2] = (image_data[dst_idx + 2] + box_color[2]) / 2;
+                image_data[dst_idx + 3] = 255; // Opaque
+            }
+        }
+        
+        // Cycle to next color
+        color_idx = (color_idx + 1) % num_colors;
     }
     
     // Save to PNG
