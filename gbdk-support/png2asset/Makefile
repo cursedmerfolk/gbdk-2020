@@ -42,7 +42,7 @@ TARGET = png2asset
 
 
 SRCS := cmp_int_color.cpp  image_data.cpp lodepng.cpp  map_attributes.cpp \
-        metasprites.cpp png2asset.cpp \
+        metasprites.cpp metasprites_flexible.cpp png2asset.cpp \
         rgb_to_nes_lut.cpp \
         export.cpp export_h_file.cpp export_c_file.cpp export_binary.cpp \
         image_utils.cpp main.cpp maps.cpp palettes.cpp process_arguments.cpp tiles.cpp

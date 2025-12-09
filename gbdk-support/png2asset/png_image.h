@@ -62,7 +62,7 @@ private:
     bool zero_palette = false;
 
 public:
-    unsigned char GetGBColor(int x, int y)
+    unsigned char GetGBColor(int x, int y) const
     {
         return data[w * y + x] % colors_per_pal;
     }

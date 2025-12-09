@@ -51,3 +51,34 @@ By default the png will be converted to metasprites. The image will be subdivide
   - The metasprites array
 
 
+
+#### Flexible Tile Matching
+
+When using `-source_tileset` with metasprites, you can enable `-flexible_tile_matching` to allow tiles from the source tileset to be positioned at any pixel location (not just grid-aligned positions).
+
+**Standard behavior** (without `-flexible_tile_matching`):
+  - Each 8x8 or 8x16 region in the sprite image is extracted as a tile
+  - Tiles are always aligned to the 8-pixel grid
+  - The tileset must contain exactly matching tiles at grid positions
+
+**Flexible tile matching** (with `-flexible_tile_matching`):
+  - Tiles from the source tileset are scanned across the entire sprite frame at every pixel position
+  - Transparent pixels (color index 0) in the tileset are ignored during matching
+  - Tiles are placed to maximize coverage while avoiding overlaps
+  - Useful for optimized sprite animations where tiles are positioned at sub-grid locations
+
+**Example usage:**
+```bash
+png2asset sprite_animation.png \
+  -source_tileset optimized_tiles.png \
+  -flexible_tile_matching \
+  -sw 24 -sh 32 \
+  -spr8x8 \
+  -keep_palette_order
+```
+
+This is particularly useful for sprite animations where:
+  - You've manually created an optimized tileset with the minimum number of unique tiles
+  - Tiles need to overlap or be positioned at non-standard locations between frames
+
+**Note:** Flexible tile matching requires both `-source_tileset` to be specified and works only with metasprite output (not maps).

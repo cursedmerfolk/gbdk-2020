@@ -10,6 +10,7 @@
 
 #include "cmp_int_color.h"
 #include "metasprites.h"
+#include "metasprites_flexible.h"
 #include "tiles.h"
 
 #include "png2asset.h"
@@ -83,7 +84,12 @@ void GetAllMetasprites(PNG2AssetData* assetData) {
     {
         for(int x = 0; x < (int)assetData->image.w; x += (unsigned int)assetData->args->spriteSize.width)
         {
-            GetMetaSprite(x, y, (unsigned int)assetData->args->spriteSize.width, (unsigned int)assetData->args->spriteSize.height, assetData->args->pivot.x, assetData->args->pivot.y, assetData);
+            // Use flexible tile matching if enabled and source tileset is provided
+            if (assetData->args->flexible_tile_matching && assetData->args->has_source_tilesets) {
+                GetMetaSpriteFlexible(x, y, (unsigned int)assetData->args->spriteSize.width, (unsigned int)assetData->args->spriteSize.height, assetData->args->pivot.x, assetData->args->pivot.y, assetData);
+            } else {
+                GetMetaSprite(x, y, (unsigned int)assetData->args->spriteSize.width, (unsigned int)assetData->args->spriteSize.height, assetData->args->pivot.x, assetData->args->pivot.y, assetData);
+            }
         }
     }
 }
