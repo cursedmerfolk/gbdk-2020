@@ -79,12 +79,6 @@ int main(int argc, char* argv[])
         arguments.has_source_tilesets = true;
         printf("Got %d tiles from the source tileset.\n", (unsigned int)arguments.source_tileset_size);
         printf("Got %d palettes from the source tileset.\n", (unsigned int)(arguments.source_total_color_count / png2AssetInstance.image.colors_per_pal));
-        
-        // Debug: show palette assignments for first 10 source tiles
-        printf("Source tileset tile palettes:\n");
-        for (size_t i = 0; i < png2AssetInstance.tiles.size(); ++i) {
-            printf("  Tile %2zu: pal=%d\n", i, png2AssetInstance.tiles[i].pal);
-        }
     }
 
     // If there is an entity tileset

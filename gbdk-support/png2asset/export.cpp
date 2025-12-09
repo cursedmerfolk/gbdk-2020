@@ -53,26 +53,22 @@ void calc_palette_and_tileset_export_size(PNG2AssetData* assetData, exportOption
         // Export all colors, including those from source tileset
         exportOptions->color_start = 0;
         exportOptions->color_count = (unsigned int)assetData->image.total_color_count;
-        
-        // For flexible tile matching, export all tiles including source tileset
-        if (flexible_tile_matching) {
-            exportOptions->tiles_start = 0;
-            exportOptions->tiles_count = assetData->tiles.size();
-        } else {
-            // For use_structs mode, still offset tiles
-            exportOptions->tiles_start = assetData->args->source_tileset_size;
-            exportOptions->tiles_count = assetData->tiles.size() - assetData->args->source_tileset_size;
-        }
     } else {
         // Otherwise default palette export behavior is to skip past/offset
         // palettes that were present in the source tileset
         exportOptions->color_start = assetData->args->source_total_color_count;
         exportOptions->color_count = assetData->image.total_color_count - assetData->args->source_total_color_count;
-        
-        // Tile export behavior is to always skip past/offset
-        // tiles that were present in the source tileset
-        exportOptions->tiles_start = assetData->args->source_tileset_size;
-        exportOptions->tiles_count = assetData->tiles.size() - assetData->args->source_tileset_size;
+    }
+
+    // Tile export behavior is to always skip past/offset
+    // tiles that were present in the source tileset
+    exportOptions->tiles_start = assetData->args->source_tileset_size;
+    exportOptions->tiles_count = assetData->tiles.size() - assetData->args->source_tileset_size;
+    
+    // For flexible tile matching, export all tiles including source tileset
+    if (flexible_tile_matching) {
+        exportOptions->tiles_start = 0;
+        exportOptions->tiles_count = assetData->tiles.size();
     }
 
     // When to export palette data:
@@ -84,5 +80,8 @@ void calc_palette_and_tileset_export_size(PNG2AssetData* assetData, exportOption
     //                               ((assetData->args->has_source_tilesets == false) || (exportOptions->color_count > 0)) );
 
     exportOptions->has_palette_data_to_export = (assetData->args->include_palettes &
-                                  ((assetData->args->has_source_tilesets == false) || (exportOptions->color_count > 0) || (use_structs_with_source_tileset == true) || (flexible_tile_matching == true)));
+                                                ((assetData->args->has_source_tilesets == false) ||
+                                                (exportOptions->color_count > 0) ||
+                                                (use_structs_with_source_tileset == true) ||
+                                                (flexible_tile_matching == true)));
 }

@@ -27,25 +27,14 @@ void ExtractTileset(PNG2AssetData* assetData, vector< Tile > & tileset, bool kee
     // Placeholder vars needed for function call, they get discarded
     size_t idx;
     unsigned char props;
-    
+
     // For source tilesets with flexible matching, we need to preserve palette info
     // Treat as a map with attributes to keep palette data in tiles
     bool preserve_palettes = (assetData->args->processing_mode == MODE_SOURCE_TILESET) && 
                              (assetData->args->flexible_tile_matching);
     bool use_map_mode = assetData->args->export_as_map || preserve_palettes;
     bool use_map_attrs = assetData->args->use_map_attributes || preserve_palettes;
-    
-    printf("DEBUG ExtractTileset: mode=%d, flexible=%d, preserve_pal=%d, use_map_mode=%d, use_map_attrs=%d\n",
-           assetData->args->processing_mode, assetData->args->flexible_tile_matching, 
-           preserve_palettes, use_map_mode, use_map_attrs);
-    printf("DEBUG: First few image pixels: ");
-    for (int i = 0; i < min(100, (int)assetData->image.data.size()); ++i) {
-        printf("%d ", assetData->image.data[i]);
-    }
-    printf("\n");
-    fflush(stdout);
 
-    int tile_count = 0;
     for(int y = 0; y < (int)assetData->image.h; y += assetData->image.tile_h)
     {
         for(int x = 0; x < (int)assetData->image.w; x += assetData->image.tile_w)
@@ -53,14 +42,6 @@ void ExtractTileset(PNG2AssetData* assetData, vector< Tile > & tileset, bool kee
             // Get a tile from the image
             Tile tile(assetData->image.tile_w * assetData->image.tile_h);
             assetData->image.ExtractTile(x, y, tile, assetData->args->sprite_mode, use_map_mode, use_map_attrs, assetData->args->bpp);
-            
-            // Debug: print palette for first few tiles
-                int pixel_idx = y * assetData->image.w + x;
-                printf("DEBUG: Tile %d at (%d,%d), pal=%d, first pixel_val=%d\n", 
-                       tile_count, x, y, tile.pal, 
-                       (pixel_idx < (int)assetData->image.data.size()) ? assetData->image.data[pixel_idx] : -1);
-
-            tile_count++;
 
             if (keep_duplicate_tiles)
                 tileset.push_back(tile);

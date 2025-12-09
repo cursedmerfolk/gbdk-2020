@@ -229,23 +229,13 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData,
     
     int tile_w = assetData->image.tile_w;
     int tile_h = assetData->image.tile_h;
-    
-    // Debug: print palette info for first few source tiles (only once)
-    static bool debug_printed = false;
-    if (!debug_printed) {
-        printf("\n=== Source Tile Palette Debug ===\n");
-        fflush(stdout);
-        for (size_t i = 0; i < assetData->args->source_tileset_size; ++i) {
-            printf("Tile %2zu: pal=%d\n", i, assetData->tiles[i].pal);
-        }
-        fflush(stdout);
-        debug_printed = true;
-    }
 
     // For each tile in the source tileset
     for (size_t tile_idx = 0; tile_idx < assetData->args->source_tileset_size; ++tile_idx) {
         const Tile& tile = assetData->tiles[tile_idx];
 
+        // Sometimes tiles need to be arranged slightly past the edge of the current frame. 
+        // tile_alpha_w and tile_alpha_h determine how many pixels to check beyond the frame edge.
         int tile_alpha_w = 0;
         int tile_alpha_h = 0;
         bool found_nontransparent;
@@ -274,12 +264,6 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData,
             else if (row_alpha_w > tile_alpha_w) {
                 tile_alpha_w = row_alpha_w;
             }
-        }
-        
-        // Debug: print palette for first few tiles
-        if (!assetData->args->frame_debug_folder.empty() && tile_idx < 10) {
-            printf("Source tile %zu has palette index: %d, non-transparent pixels: %d\n", 
-                   tile_idx, tile.pal, non_transparent_count);
         }
 
         // Scan every pixel position in the frame
@@ -310,7 +294,7 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData,
                         props = assetData->args->props_default | (1 << 6); // HFLIP
                     }
                 }
-                
+
                 if (matched) {
                     // Use the palette index stored in the tile from the source tileset
                     unsigned char pal_idx = tile.pal;
@@ -327,13 +311,6 @@ void GetMetaSpriteFlexible(int _x, int _y,
                            int _w, int _h,
                            int pivot_x,int pivot_y, 
                            PNG2AssetData* assetData) {
-    static bool first_call = true;
-    if (first_call) {
-        printf("DEBUG: GetMetaSpriteFlexible called for first time\n");
-        fflush(stdout);
-        first_call = false;
-    }
-    
     vector<TileMatch> matches;
     FindFlexibleTileMatches(assetData, _x, _y, _w, _h, matches);
     

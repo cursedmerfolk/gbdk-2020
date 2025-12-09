@@ -31,9 +31,6 @@ void loadFile(vector<unsigned char>& buffer, const std::string& filename);
 
 int ReadImageData_KeepPaletteOrder(  PNG2AssetData* assetData, string input_filename) {
 
-    printf("DEBUG: ReadImageData_KeepPaletteOrder called for mode=%d\n", assetData->args->processing_mode);
-    fflush(stdout);
-
     //load and decode png
     vector<unsigned char> buffer;
     lodepng::load_file(buffer, input_filename);
@@ -80,16 +77,10 @@ int ReadImageData_KeepPaletteOrder(  PNG2AssetData* assetData, string input_file
 
     // Save a copy of the palette data if it's the source palette (free first if already allocated)
     if (assetData->args->processing_mode == MODE_SOURCE_TILESET) {
-        printf("DEBUG: Entered MODE_SOURCE_TILESET block\n");
-        fflush(stdout);
-        
         if (assetData->image.source_tileset_palette) free(assetData->image.source_tileset_palette);
         assetData->image.source_tileset_palette = new unsigned char[assetData->image.total_color_count * RGBA32_SZ];
         memcpy(assetData->image.source_tileset_palette, state.info_png.color.palette, assetData->image.total_color_count * RGBA32_SZ);
-        
-        printf("DEBUG: Processing source tileset with %d palettes\n", (int)(assetData->image.total_color_count / assetData->image.colors_per_pal));
-        fflush(stdout);
-        
+
         // For source tilesets, we need to convert the indexed image data to GB format
         // (with palette index encoded in upper bits). First expand to 32-bit RGBA,
         // build palette mappings, then re-encode with palette info.
@@ -110,16 +101,10 @@ int ReadImageData_KeepPaletteOrder(  PNG2AssetData* assetData, string input_file
             image32.data.push_back(assetData->image.palette[color_idx * 4 + 2]); // B
             image32.data.push_back(assetData->image.palette[color_idx * 4 + 3]); // A
         }
-        
-        printf("DEBUG: Expanded %zu pixels to RGBA32\n", image32.data.size() / 4);
-        fflush(stdout);
-        
+
         // Build palette/tile mappings
         int* palettes_per_tile = BuildPalettesAndAttributes(image32, assetData);
-        
-        printf("DEBUG: Built palette mappings, re-encoding image data\n");
-        fflush(stdout);
-        
+
         // Re-encode image data with palette info in upper bits
         assetData->image.data.clear();
         for(size_t y = 0; y < image32.h; ++y) {
@@ -131,10 +116,7 @@ int ReadImageData_KeepPaletteOrder(  PNG2AssetData* assetData, string input_file
                 assetData->image.data.push_back((palette << assetData->args->bpp) + index);
             }
         }
-        
-        printf("DEBUG: Re-encoded %zu pixels with palette info\n", assetData->image.data.size());
-        fflush(stdout);
-        
+
         delete[] palettes_per_tile;
     }
 
@@ -176,9 +158,6 @@ int ReadImageData_KeepPaletteOrder(  PNG2AssetData* assetData, string input_file
 }
 
 int ReadImageData_Default(PNG2AssetData* assetData, string  input_filename) {
-
-    printf("DEBUG: ReadImageData_Default called for mode=%d\n", assetData->args->processing_mode);
-    fflush(stdout);
 
     //load and decode png
     vector<unsigned char> buffer;
