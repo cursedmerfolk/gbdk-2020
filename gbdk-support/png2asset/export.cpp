@@ -45,7 +45,7 @@ string extract_name(string const & name)
 void calc_palette_and_tileset_export_size(PNG2AssetData* assetData, exportOptions_t* exportOptions) {
 
     bool use_structs_with_source_tileset = (assetData->args->has_source_tilesets == true) && (assetData->args->use_structs == true);
-    bool flexible_tile_matching = (assetData->args->flexible_tile_matching == true) && (assetData->args->has_source_tilesets == true);
+    bool flexible_tile_matching = assetData->args->flexible_tile_matching;
 
     // (source_tileset + use_structs) is a special combination for ZGB
     // (flexible_tile_matching) also needs all colors/tiles from source tileset
