@@ -58,6 +58,7 @@ struct PNG2AssetArguments {
     bool relative_paths;
     bool use_metafile;
     bool flexible_tile_matching;
+    bool debug_reconstruct;
 
     int errorCode;
     int bank;

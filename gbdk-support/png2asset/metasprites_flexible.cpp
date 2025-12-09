@@ -145,12 +145,27 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData, int frame_x, int frame_y,
     int tile_w = assetData->image.tile_w;
     int tile_h = assetData->image.tile_h;
     
-    // Create a coverage map to track which pixels have been matched
-    vector<bool> covered((frame_w) * (frame_h), false);
+    // Debug: print palette info for first few source tiles (only once)
+    static bool debug_printed = false;
+    if (!debug_printed) {
+        printf("\n=== Source Tile Palette Debug ===\n");
+        fflush(stdout);
+        size_t max_tiles = (assetData->args->source_tileset_size < 15) ? assetData->args->source_tileset_size : 15;
+        for (size_t i = 0; i < max_tiles; ++i) {
+            printf("Tile %2zu: pal=%d\n", i, assetData->tiles[i].pal);
+        }
+        fflush(stdout);
+        debug_printed = true;
+    }
     
     // For each tile in the source tileset
     for (size_t tile_idx = 0; tile_idx < assetData->args->source_tileset_size; ++tile_idx) {
         const Tile& tile = assetData->tiles[tile_idx];
+        
+        // Debug: print palette for first few tiles
+        if (assetData->args->debug_reconstruct && tile_idx < 10) {
+            printf("Source tile %zu has palette index: %d\n", tile_idx, tile.pal);
+        }
         
         // Scan every pixel position in the frame
         for (int y = frame_y; y <= frame_y + frame_h - tile_h; ++y) {
@@ -180,51 +195,13 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData, int frame_x, int frame_y,
                 }
                 
                 if (matched) {
-                    // Check if this area overlaps with already covered pixels
-                    // We want to avoid placing the same tile twice in overlapping positions
-                    bool overlaps = false;
-                    for (int ty = 0; ty < tile_h && !overlaps; ++ty) {
-                        for (int tx = 0; tx < tile_w && !overlaps; ++tx) {
-                            int check_x = x - frame_x + tx;
-                            int check_y = y - frame_y + ty;
-                            if (check_x >= 0 && check_x < frame_w && check_y >= 0 && check_y < frame_h) {
-                                unsigned char tile_pixel = tile.data[ty * tile_w + tx];
-                                // Only check non-transparent pixels
-                                if (tile_pixel != 0 && covered[check_y * frame_w + check_x]) {
-                                    overlaps = true;
-                                }
-                            }
-                        }
+                    // Use the palette index stored in the tile from the source tileset
+                    unsigned char pal_idx = tile.pal;
+                    if (assetData->args->debug_reconstruct && tile_idx < 5) {
+                        printf("  DEBUG: tile %zu has pal=%d\n", tile_idx, pal_idx);
                     }
-                    
-                    if (!overlaps) {
-                        // Mark pixels as covered
-                        for (int ty = 0; ty < tile_h; ++ty) {
-                            for (int tx = 0; tx < tile_w; ++tx) {
-                                int mark_x = x - frame_x + tx;
-                                int mark_y = y - frame_y + ty;
-                                if (mark_x >= 0 && mark_x < frame_w && mark_y >= 0 && mark_y < frame_h) {
-                                    unsigned char tile_pixel = tile.data[ty * tile_w + tx];
-                                    if (tile_pixel != 0) {
-                                        covered[mark_y * frame_w + mark_x] = true;
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Get palette from the first non-transparent pixel of the tile at this position
-                        unsigned char pal_idx = 0;
-                        for (int ty = 0; ty < tile_h && pal_idx == 0; ++ty) {
-                            for (int tx = 0; tx < tile_w && pal_idx == 0; ++tx) {
-                                if (tile.data[ty * tile_w + tx] != 0) {
-                                    pal_idx = assetData->image.data[(y + ty) * assetData->image.w + (x + tx)] >> assetData->args->bpp;
-                                }
-                            }
-                        }
-                        props |= pal_idx;
-                        
-                        matches.push_back(TileMatch(tile_idx, x, y, props));
-                    }
+                    props |= pal_idx;
+                    matches.push_back(TileMatch(tile_idx, x, y, props));
                 }
             }
         }
@@ -234,11 +211,22 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData, int frame_x, int frame_y,
 // Generate metasprite using flexible tile matching
 void GetMetaSpriteFlexible(int _x, int _y, int _w, int _h, int pivot_x, int pivot_y, 
                            PNG2AssetData* assetData) {
+    static bool first_call = true;
+    if (first_call) {
+        printf("DEBUG: GetMetaSpriteFlexible called for first time\n");
+        fflush(stdout);
+        first_call = false;
+    }
+    
     vector<TileMatch> matches;
     FindFlexibleTileMatches(assetData, _x, _y, _w, _h, matches);
     
     assetData->sprites.push_back(MetaSprite());
     MetaSprite& mt_sprite = assetData->sprites.back();
+    
+    // Track last position for relative offsets (standard metasprite format)
+    int last_x = _x + pivot_x;
+    int last_y = _y + pivot_y;
     
     // Convert matches to MTTiles
     for (const TileMatch& match : matches) {
@@ -250,13 +238,17 @@ void GetMetaSpriteFlexible(int _x, int _y, int _w, int _h, int pivot_x, int pivo
         else if(assetData->args->sprite_mode == SPR_16x16_MSX)
             idx *= 4;
         
-        // Calculate offset from pivot
-        int offset_x = match.x - (_x + pivot_x);
-        int offset_y = match.y - (_y + pivot_y);
+        // Calculate relative offset from last tile position (standard metasprite format)
+        int offset_x = match.x - last_x;
+        int offset_y = match.y - last_y;
         
         mt_sprite.push_back(MTTile(offset_x, offset_y, (unsigned char)idx, match.props));
+        
+        // Update last position for next tile
+        last_x = match.x;
+        last_y = match.y;
     }
     
-    printf("Generated metasprite frame at (%d,%d) with %d tiles using flexible matching\n", 
+    printf("Generated metasprite frame at (%d,%d) with %d tiles using flexible matching [NEW CODE]\n", 
            _x, _y, (int)matches.size());
 }

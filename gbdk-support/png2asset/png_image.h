@@ -105,7 +105,8 @@ public:
     bool ExtractTile(int x, int y, Tile& tile, int sprite_mode, bool export_as_map, bool use_map_attributes, int bpp)
     {
         // Set the palette to 0 when pals are not stored in tiles to allow tiles to be equal even when their palettes are different
-        zero_palette = !(export_as_map && !use_map_attributes);
+        // Keep palette info when: exporting as map AND using map attributes
+        zero_palette = !(export_as_map && use_map_attributes);
 
         if(sprite_mode == SPR_16x16_MSX)
             return ExtractTile_MSX16x16(x, y, tile, bpp);

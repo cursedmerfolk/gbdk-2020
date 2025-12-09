@@ -28,6 +28,7 @@
 #include "process_arguments.h"
 #include "png_image.h"
 #include "tiles.h"
+#include "debug_reconstruct.h"
 
 using namespace std;
 
@@ -75,6 +76,13 @@ int PNG2AssetData::Execute(PNG2AssetArguments* arguments, string  input_filename
 }
 
 int PNG2AssetData::Export() {
+
+    // Debug: Reconstruct metasprite frames to PNG for debugging
+    if (this->args->debug_reconstruct && !this->args->export_as_map) {
+        // Extract base filename without extension
+        string base_name = this->args->data_name;
+        ReconstructAllMetaspriteFrames(this, base_name);
+    }
 
     // Header file export
     if(export_h_file(this) == false) return EXIT_FAILURE;

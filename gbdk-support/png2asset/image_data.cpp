@@ -31,6 +31,9 @@ void loadFile(vector<unsigned char>& buffer, const std::string& filename);
 
 int ReadImageData_KeepPaletteOrder(  PNG2AssetData* assetData, string input_filename) {
 
+    printf("DEBUG: ReadImageData_KeepPaletteOrder called for mode=%d\n", assetData->args->processing_mode);
+    fflush(stdout);
+
     //load and decode png
     vector<unsigned char> buffer;
     lodepng::load_file(buffer, input_filename);
@@ -77,9 +80,62 @@ int ReadImageData_KeepPaletteOrder(  PNG2AssetData* assetData, string input_file
 
     // Save a copy of the palette data if it's the source palette (free first if already allocated)
     if (assetData->args->processing_mode == MODE_SOURCE_TILESET) {
+        printf("DEBUG: Entered MODE_SOURCE_TILESET block\n");
+        fflush(stdout);
+        
         if (assetData->image.source_tileset_palette) free(assetData->image.source_tileset_palette);
         assetData->image.source_tileset_palette = new unsigned char[assetData->image.total_color_count * RGBA32_SZ];
         memcpy(assetData->image.source_tileset_palette, state.info_png.color.palette, assetData->image.total_color_count * RGBA32_SZ);
+        
+        printf("DEBUG: Processing source tileset with %d palettes\n", (int)(assetData->image.total_color_count / assetData->image.colors_per_pal));
+        fflush(stdout);
+        
+        // For source tilesets, we need to convert the indexed image data to GB format
+        // (with palette index encoded in upper bits). First expand to 32-bit RGBA,
+        // build palette mappings, then re-encode with palette info.
+        PNGImage image32;
+        image32.w = assetData->image.w;
+        image32.h = assetData->image.h;
+        image32.tile_w = assetData->image.tile_w;
+        image32.tile_h = assetData->image.tile_h;
+        image32.colors_per_pal = assetData->image.colors_per_pal;
+        image32.total_color_count = assetData->image.total_color_count;
+        
+        // Expand indexed data to RGBA32 using the palette
+        for(size_t i = 0; i < assetData->image.data.size(); ++i) {
+            unsigned char color_idx = assetData->image.data[i];
+            // Each palette entry is 4 bytes (RGBA)
+            image32.data.push_back(assetData->image.palette[color_idx * 4 + 0]); // R
+            image32.data.push_back(assetData->image.palette[color_idx * 4 + 1]); // G
+            image32.data.push_back(assetData->image.palette[color_idx * 4 + 2]); // B
+            image32.data.push_back(assetData->image.palette[color_idx * 4 + 3]); // A
+        }
+        
+        printf("DEBUG: Expanded %zu pixels to RGBA32\n", image32.data.size() / 4);
+        fflush(stdout);
+        
+        // Build palette/tile mappings
+        int* palettes_per_tile = BuildPalettesAndAttributes(image32, assetData);
+        
+        printf("DEBUG: Built palette mappings, re-encoding image data\n");
+        fflush(stdout);
+        
+        // Re-encode image data with palette info in upper bits
+        assetData->image.data.clear();
+        for(size_t y = 0; y < image32.h; ++y) {
+            for(size_t x = 0; x < image32.w; ++x) {
+                unsigned char* c32ptr = &image32.data[(image32.w * y + x) * RGBA32_SZ];
+                int color32 = (c32ptr[0] << 24) | (c32ptr[1] << 16) | (c32ptr[2] << 8) | c32ptr[3];
+                unsigned char palette = palettes_per_tile[(y / image32.tile_h) * (image32.w / image32.tile_w) + (x / image32.tile_w)];
+                unsigned char index = (unsigned char)std::distance(assetData->palettes[palette].begin(), assetData->palettes[palette].find(color32));
+                assetData->image.data.push_back((palette << assetData->args->bpp) + index);
+            }
+        }
+        
+        printf("DEBUG: Re-encoded %zu pixels with palette info\n", assetData->image.data.size());
+        fflush(stdout);
+        
+        delete[] palettes_per_tile;
     }
 
 
@@ -120,6 +176,9 @@ int ReadImageData_KeepPaletteOrder(  PNG2AssetData* assetData, string input_file
 }
 
 int ReadImageData_Default(PNG2AssetData* assetData, string  input_filename) {
+
+    printf("DEBUG: ReadImageData_Default called for mode=%d\n", assetData->args->processing_mode);
+    fflush(stdout);
 
     //load and decode png
     vector<unsigned char> buffer;

@@ -91,6 +91,7 @@ static void initArguments(PNG2AssetArguments* args) {
     args->use_structs = false;
     args->flip_tiles = true;
     args->flexible_tile_matching = false;
+    args->debug_reconstruct = false;
 
     // args->errorCode;
     args->bank = BANK_NUM_UNSET;
@@ -154,6 +155,7 @@ void showHelp(void) {
         printf("-metasprites_only   export metasprite descriptors only\n");
         printf("-source_tileset     use source tileset (image with common tiles)\n");
         printf("-flexible_tile_matching match tiles from source tileset at any pixel position (not grid-aligned)\n");
+        printf("-debug_reconstruct  output reconstructed PNG frames for debugging metasprite generation\n");
         printf("-entity_tileset     (maps only) mark matching tiles counting from 255 down, entity patterns not exported\n");
         printf("-keep_duplicate_tiles   do not remove duplicate tiles (default: not enabled)\n");
         printf("-no_palettes        do not export palette data\n");
@@ -371,6 +373,9 @@ static int processArguments(int startIndex, int argc, const char* argv[], PNG2As
         }
         else if(!strcmp(argv[i], "-flexible_tile_matching")) {
             args->flexible_tile_matching = true;
+        }
+        else if(!strcmp(argv[i], "-debug_reconstruct")) {
+            args->debug_reconstruct = true;
         }
         else {
             printf("Warning: Argument \"%s\" not recognized\n", argv[i]);
