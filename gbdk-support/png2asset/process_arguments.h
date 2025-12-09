@@ -67,6 +67,7 @@ struct PNG2AssetArguments {
     int sprite_mode;
     int bpp;
     int props_default;  // Default Sprite props has no attributes enabled
+    int match_threshold_pixels;  // Number of pixels that must match for flexible tile matching (calculated from percentage)
 
     unsigned int tile_origin; // Default to no tile index offset
     size_t source_total_color_count;  // Total number of colors (palette_count x colors_per_palette)

@@ -61,7 +61,7 @@ inline bool ComparePixels(const Tile& tile, const PNGImage& image,
 // Takes into account that tile and image may use different palettes
 bool TileMatchesAtPosition(const Tile& tile, const PNGImage& image,
                            int pos_x, int pos_y, 
-                           int tile_w, int tile_h) {
+                           int tile_w, int tile_h, int threshold_pixels) {
     // Check bounds
     if (pos_x + tile_w > (int)image.w || pos_y + tile_h > (int)image.h) {
         return false;
@@ -71,23 +71,26 @@ bool TileMatchesAtPosition(const Tile& tile, const PNGImage& image,
     }
 
     // Compare each pixel in the tile
+    int matched_pixels = 0;
+    
     for (int y = 0; y < tile_h; ++y) {
         for (int x = 0; x < tile_w; ++x) {
             int tile_data_idx = y * tile_w + x;
             int image_data_idx = image.w * (pos_y + y) + (pos_x + x);
             
-            if (!ComparePixels(tile, image, tile_data_idx, image_data_idx)) {
-                return false;
+            if (ComparePixels(tile, image, tile_data_idx, image_data_idx)) {
+                matched_pixels++;
             }
         }
     }
     
-    return true;
+    // Check if matched pixels meets threshold
+    return matched_pixels >= threshold_pixels;
 }
 
 // Check if a horizontally flipped tile matches at a position
 bool TileMatchesAtPositionFlipH(const Tile& tile, const PNGImage& image, int pos_x, int pos_y, 
-                                int tile_w, int tile_h) {
+                                int tile_w, int tile_h, int threshold_pixels) {
     if (pos_x + tile_w > (int)image.w || pos_y + tile_h > (int)image.h) {
         return false;
     }
@@ -95,24 +98,26 @@ bool TileMatchesAtPositionFlipH(const Tile& tile, const PNGImage& image, int pos
         return false;
     }
 
+    int matched_pixels = 0;
+    
     for (int y = 0; y < tile_h; ++y) {
         for (int x = 0; x < tile_w; ++x) {
             // Flip horizontally: reverse x coordinate
             int tile_data_idx = y * tile_w + (tile_w - 1 - x);
             int image_data_idx = image.w * (pos_y + y) + (pos_x + x);
             
-            if (!ComparePixels(tile, image, tile_data_idx, image_data_idx)) {
-                return false;
+            if (ComparePixels(tile, image, tile_data_idx, image_data_idx)) {
+                matched_pixels++;
             }
         }
     }
     
-    return true;
+    return matched_pixels >= threshold_pixels;
 }
 
 // Check if a vertically flipped tile matches at a position
 bool TileMatchesAtPositionFlipV(const Tile& tile, const PNGImage& image, int pos_x, int pos_y, 
-                                int tile_w, int tile_h) {
+                                int tile_w, int tile_h, int threshold_pixels) {
     if (pos_x + tile_w > (int)image.w || pos_y + tile_h > (int)image.h) {
         return false;
     }
@@ -120,24 +125,26 @@ bool TileMatchesAtPositionFlipV(const Tile& tile, const PNGImage& image, int pos
         return false;
     }
 
+    int matched_pixels = 0;
+    
     for (int y = 0; y < tile_h; ++y) {
         for (int x = 0; x < tile_w; ++x) {
             // Flip vertically: reverse y coordinate
             int tile_data_idx = (tile_h - 1 - y) * tile_w + x;
             int image_data_idx = image.w * (pos_y + y) + (pos_x + x);
             
-            if (!ComparePixels(tile, image, tile_data_idx, image_data_idx)) {
-                return false;
+            if (ComparePixels(tile, image, tile_data_idx, image_data_idx)) {
+                matched_pixels++;
             }
         }
     }
     
-    return true;
+    return matched_pixels >= threshold_pixels;
 }
 
 // Check if a tile flipped both ways matches at a position
 bool TileMatchesAtPositionFlipHV(const Tile& tile, const PNGImage& image, int pos_x, int pos_y, 
-                                 int tile_w, int tile_h) {
+                                 int tile_w, int tile_h, int threshold_pixels) {
     if (pos_x + tile_w > (int)image.w || pos_y + tile_h > (int)image.h) {
         return false;
     }
@@ -145,19 +152,21 @@ bool TileMatchesAtPositionFlipHV(const Tile& tile, const PNGImage& image, int po
         return false;
     }
 
+    int matched_pixels = 0;
+    
     for (int y = 0; y < tile_h; ++y) {
         for (int x = 0; x < tile_w; ++x) {
             // Flip both: reverse both coordinates
             int tile_data_idx = (tile_h - 1 - y) * tile_w + (tile_w - 1 - x);
             int image_data_idx = image.w * (pos_y + y) + (pos_x + x);
             
-            if (!ComparePixels(tile, image, tile_data_idx, image_data_idx)) {
-                return false;
+            if (ComparePixels(tile, image, tile_data_idx, image_data_idx)) {
+                matched_pixels++;
             }
         }
     }
     
-    return true;
+    return matched_pixels >= threshold_pixels;
 }
 
 // Find all positions where tiles from the tileset match in a sprite frame area
@@ -198,22 +207,24 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData,
                 unsigned char props = assetData->args->props_default;
                 bool matched = false;
                 
+                int threshold_pixels = assetData->args->match_threshold_pixels;
+                
                 // Try normal orientation
-                if (TileMatchesAtPosition(tile, assetData->image, x, y, tile_w, tile_h)) {
+                if (TileMatchesAtPosition(tile, assetData->image, x, y, tile_w, tile_h, threshold_pixels)) {
                     matched = true;
                     props = assetData->args->props_default;
                 }
                 // Try flipped versions if enabled
                 else if (assetData->args->flip_tiles) {
-                    if (TileMatchesAtPositionFlipV(tile, assetData->image, x, y, tile_w, tile_h)) {
+                    if (TileMatchesAtPositionFlipV(tile, assetData->image, x, y, tile_w, tile_h, threshold_pixels)) {
                         matched = true;
                         props = assetData->args->props_default | (1 << 5); // VFLIP
                     }
-                    else if (TileMatchesAtPositionFlipHV(tile, assetData->image, x, y, tile_w, tile_h)) {
+                    else if (TileMatchesAtPositionFlipHV(tile, assetData->image, x, y, tile_w, tile_h, threshold_pixels)) {
                         matched = true;
                         props = assetData->args->props_default | (1 << 5) | (1 << 6); // VFLIP | HFLIP
                     }
-                    else if (TileMatchesAtPositionFlipH(tile, assetData->image, x, y, tile_w, tile_h)) {
+                    else if (TileMatchesAtPositionFlipH(tile, assetData->image, x, y, tile_w, tile_h, threshold_pixels)) {
                         matched = true;
                         props = assetData->args->props_default | (1 << 6); // HFLIP
                     }
