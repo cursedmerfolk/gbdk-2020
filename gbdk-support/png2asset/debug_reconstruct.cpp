@@ -54,17 +54,20 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
     int current_x = pivot_x;
     int current_y = pivot_y;
     
-    // Define colors for tile boundaries (excluding yellow, using 50% alpha)
-    // Cycle through: cyan, magenta, green, red, blue, orange
+    // Define colors for tile boundaries (excluding yellow, using 25% alpha)
+    // Cycle through: cyan, magenta, green, red, blue, orange, purple, lime, pink
     unsigned char box_colors[][3] = {
         {0, 255, 255},   // Cyan
         {255, 0, 255},   // Magenta
         {0, 255, 0},     // Green
         {255, 0, 0},     // Red
         {0, 0, 255},     // Blue
-        {255, 128, 0}    // Orange
+        {255, 128, 0},   // Orange
+        {128, 0, 255},   // Purple
+        {128, 255, 0},   // Lime
+        {255, 128, 255}  // Pink
     };
-    int num_colors = 6;
+    int num_colors = 9;
     int color_idx = 0;
     
     // Process each tile in the metasprite
@@ -150,7 +153,7 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
             }
         }
         
-        // Draw colored box around the tile (50% transparency)
+        // Draw colored box around the tile (25% transparency)
         unsigned char* box_color = box_colors[color_idx];
         
         // Draw horizontal lines (top and bottom)
@@ -161,10 +164,10 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
             int dst_y_top = y_pos;
             if (dst_x >= 0 && dst_x < img_w && dst_y_top >= 0 && dst_y_top < img_h) {
                 int dst_idx = (dst_y_top * img_w + dst_x) * 4;
-                // Blend 50% with existing pixel
-                image_data[dst_idx + 0] = (image_data[dst_idx + 0] + box_color[0]) / 2;
-                image_data[dst_idx + 1] = (image_data[dst_idx + 1] + box_color[1]) / 2;
-                image_data[dst_idx + 2] = (image_data[dst_idx + 2] + box_color[2]) / 2;
+                // Blend 25% with existing pixel (75% original + 25% box color)
+                image_data[dst_idx + 0] = (image_data[dst_idx + 0] * 3 + box_color[0]) / 4;
+                image_data[dst_idx + 1] = (image_data[dst_idx + 1] * 3 + box_color[1]) / 4;
+                image_data[dst_idx + 2] = (image_data[dst_idx + 2] * 3 + box_color[2]) / 4;
                 image_data[dst_idx + 3] = 255; // Opaque
             }
             
@@ -172,10 +175,10 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
             int dst_y_bottom = y_pos + tile_h - 1;
             if (dst_x >= 0 && dst_x < img_w && dst_y_bottom >= 0 && dst_y_bottom < img_h) {
                 int dst_idx = (dst_y_bottom * img_w + dst_x) * 4;
-                // Blend 50% with existing pixel
-                image_data[dst_idx + 0] = (image_data[dst_idx + 0] + box_color[0]) / 2;
-                image_data[dst_idx + 1] = (image_data[dst_idx + 1] + box_color[1]) / 2;
-                image_data[dst_idx + 2] = (image_data[dst_idx + 2] + box_color[2]) / 2;
+                // Blend 25% with existing pixel (75% original + 25% box color)
+                image_data[dst_idx + 0] = (image_data[dst_idx + 0] * 3 + box_color[0]) / 4;
+                image_data[dst_idx + 1] = (image_data[dst_idx + 1] * 3 + box_color[1]) / 4;
+                image_data[dst_idx + 2] = (image_data[dst_idx + 2] * 3 + box_color[2]) / 4;
                 image_data[dst_idx + 3] = 255; // Opaque
             }
         }
@@ -188,10 +191,10 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
             int dst_x_left = x_pos;
             if (dst_x_left >= 0 && dst_x_left < img_w && dst_y >= 0 && dst_y < img_h) {
                 int dst_idx = (dst_y * img_w + dst_x_left) * 4;
-                // Blend 50% with existing pixel
-                image_data[dst_idx + 0] = (image_data[dst_idx + 0] + box_color[0]) / 2;
-                image_data[dst_idx + 1] = (image_data[dst_idx + 1] + box_color[1]) / 2;
-                image_data[dst_idx + 2] = (image_data[dst_idx + 2] + box_color[2]) / 2;
+                // Blend 25% with existing pixel (75% original + 25% box color)
+                image_data[dst_idx + 0] = (image_data[dst_idx + 0] * 3 + box_color[0]) / 4;
+                image_data[dst_idx + 1] = (image_data[dst_idx + 1] * 3 + box_color[1]) / 4;
+                image_data[dst_idx + 2] = (image_data[dst_idx + 2] * 3 + box_color[2]) / 4;
                 image_data[dst_idx + 3] = 255; // Opaque
             }
             
@@ -199,10 +202,10 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
             int dst_x_right = x_pos + tile_w - 1;
             if (dst_x_right >= 0 && dst_x_right < img_w && dst_y >= 0 && dst_y < img_h) {
                 int dst_idx = (dst_y * img_w + dst_x_right) * 4;
-                // Blend 50% with existing pixel
-                image_data[dst_idx + 0] = (image_data[dst_idx + 0] + box_color[0]) / 2;
-                image_data[dst_idx + 1] = (image_data[dst_idx + 1] + box_color[1]) / 2;
-                image_data[dst_idx + 2] = (image_data[dst_idx + 2] + box_color[2]) / 2;
+                // Blend 25% with existing pixel (75% original + 25% box color)
+                image_data[dst_idx + 0] = (image_data[dst_idx + 0] * 3 + box_color[0]) / 4;
+                image_data[dst_idx + 1] = (image_data[dst_idx + 1] * 3 + box_color[1]) / 4;
+                image_data[dst_idx + 2] = (image_data[dst_idx + 2] * 3 + box_color[2]) / 4;
                 image_data[dst_idx + 3] = 255; // Opaque
             }
         }
