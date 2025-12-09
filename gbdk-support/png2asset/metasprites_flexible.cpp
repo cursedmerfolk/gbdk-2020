@@ -56,13 +56,22 @@ inline bool ComparePixels(const Tile& tile, const PNGImage& image,
     return (tile_r == image_r && tile_g == image_g && tile_b == image_b);
 }
 
-// Helper function to count matched non-transparent pixels with optional flipping
-// flip_x: if true, flip tile horizontally
-// flip_y: if true, flip tile vertically
-inline int CountMatchedPixels(const Tile& tile, const PNGImage& image,
-                               int pos_x, int pos_y, 
-                               int tile_w, int tile_h,
-                               bool flip_x, bool flip_y) {
+// Check if a tile matches at a specific pixel position in the image
+// Compares pixel-by-pixel, ignoring transparent pixels (color index 0)
+// Takes into account that tile and image may use different palettes
+inline bool TileMatches(const Tile& tile, const PNGImage& image,
+                        int pos_x, int pos_y, 
+                        int tile_w, int tile_h,
+                        int threshold_pixels,
+                        bool flip_x, bool flip_y) {
+
+    if (pos_x + tile_w > (int)image.w || pos_y + tile_h > (int)image.h) {
+        return false;
+    }
+    if (pos_x < 0 || pos_y < 0) {
+        return false;
+    }
+    
     int matched_nontransparent_pixels = 0;
     
     for (int y = 0; y < tile_h; ++y) {
@@ -86,94 +95,60 @@ inline int CountMatchedPixels(const Tile& tile, const PNGImage& image,
             }
         }
     }
-    
-    return matched_nontransparent_pixels;
+
+    return matched_nontransparent_pixels >= threshold_pixels;
 }
 
 // Check if a tile matches at a specific pixel position in the image
-// Compares pixel-by-pixel, ignoring transparent pixels (color index 0)
-// Takes into account that tile and image may use different palettes
 bool TileMatchesAtPosition(const Tile& tile, const PNGImage& image,
                            int pos_x, int pos_y, 
-                           int tile_w, int tile_h, int threshold_pixels,
-                           int non_transparent_count) {
-    // Check bounds
-    if (pos_x + tile_w > (int)image.w || pos_y + tile_h > (int)image.h) {
-        return false;
-    }
-    if (pos_x < 0 || pos_y < 0) {
-        return false;
-    }
-
-    // Adjust threshold based on non-transparent pixels in source tile
-    // Example: if tile has 12 non-transparent pixels out of 64, 
-    // and threshold is 62/64 (97%), then new_threshold = (12 * 62) / 64 = 11.6 -> 11 pixels
-    int adjusted_threshold = (non_transparent_count * threshold_pixels) / (tile_w * tile_h);
-    
-    // Normal orientation: no flipping
-    int matched = CountMatchedPixels(tile, image, pos_x, pos_y, tile_w, tile_h, false, false);
-    
-    return matched >= adjusted_threshold;
+                           int tile_w, int tile_h,
+                           int threshold_pixels) {
+    // No flipping
+    return TileMatches(tile, image,
+                              pos_x, pos_y,
+                              tile_w, tile_h,
+                              threshold_pixels,
+                              false, false);
 }
 
 // Check if a horizontally flipped tile matches at a position
-bool TileMatchesAtPositionFlipH(const Tile& tile, const PNGImage& image, int pos_x, int pos_y, 
-                                int tile_w, int tile_h, int threshold_pixels,
-                                int non_transparent_count) {
-    if (pos_x + tile_w > (int)image.w || pos_y + tile_h > (int)image.h) {
-        return false;
-    }
-    if (pos_x < 0 || pos_y < 0) {
-        return false;
-    }
-
-    // Adjust threshold based on non-transparent pixels
-    int adjusted_threshold = (non_transparent_count * threshold_pixels) / (tile_w * tile_h);
-    
+bool TileMatchesAtPositionFlipH(const Tile& tile, const PNGImage& image,
+                                int pos_x, int pos_y, 
+                                int tile_w, int tile_h,
+                                int threshold_pixels) {
     // Flip horizontally
-    int matched = CountMatchedPixels(tile, image, pos_x, pos_y, tile_w, tile_h, true, false);
-    
-    return matched >= adjusted_threshold;
+    return TileMatches(tile, image,
+                              pos_x, pos_y,
+                              tile_w, tile_h,
+                              threshold_pixels,
+                              true, false);
 }
 
 // Check if a vertically flipped tile matches at a position
-bool TileMatchesAtPositionFlipV(const Tile& tile, const PNGImage& image, int pos_x, int pos_y, 
-                                int tile_w, int tile_h, int threshold_pixels,
-                                int non_transparent_count) {
-    if (pos_x + tile_w > (int)image.w || pos_y + tile_h > (int)image.h) {
-        return false;
-    }
-    if (pos_x < 0 || pos_y < 0) {
-        return false;
-    }
-
-    // Adjust threshold based on non-transparent pixels
-    int adjusted_threshold = (non_transparent_count * threshold_pixels) / (tile_w * tile_h);
-    
+bool TileMatchesAtPositionFlipV(const Tile& tile, const PNGImage& image,
+                                int pos_x, int pos_y, 
+                                int tile_w, int tile_h,
+                                int threshold_pixels) {
     // Flip vertically
-    int matched = CountMatchedPixels(tile, image, pos_x, pos_y, tile_w, tile_h, false, true);
-    
-    return matched >= adjusted_threshold;
+    return TileMatches(tile, image,
+                       pos_x, pos_y,
+                       tile_w, tile_h,
+                       threshold_pixels,
+                       false, true);
 }
 
 // Check if a tile flipped both ways matches at a position
-bool TileMatchesAtPositionFlipHV(const Tile& tile, const PNGImage& image, int pos_x, int pos_y, 
-                                 int tile_w, int tile_h, int threshold_pixels,
-                                 int non_transparent_count) {
-    if (pos_x + tile_w > (int)image.w || pos_y + tile_h > (int)image.h) {
-        return false;
-    }
-    if (pos_x < 0 || pos_y < 0) {
-        return false;
-    }
-
-    // Adjust threshold based on non-transparent pixels
-    int adjusted_threshold = (non_transparent_count * threshold_pixels) / (tile_w * tile_h);
-    
-    // Flip both horizontally and vertically
-    int matched = CountMatchedPixels(tile, image, pos_x, pos_y, tile_w, tile_h, true, true);
-    
-    return matched >= adjusted_threshold;
+bool TileMatchesAtPositionFlipHV(const Tile& tile, const PNGImage& image,
+                                 int pos_x, int pos_y, 
+                                 int tile_w, int tile_h,
+                                 int threshold_pixels) {
+    // Flip horizontally and vertically
+    return TileMatches(tile, image,
+                              pos_x, pos_y,
+                              tile_w, tile_h,
+                              threshold_pixels,
+                              true, true);
 }
 
 // Find all positions where tiles from the tileset match in a sprite frame area
@@ -223,30 +198,31 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData,
             }
         }
 
+        // Adjust threshold based on non-transparent pixels
+        int adjusted_threshold = (non_transparent_count * assetData->args->match_threshold_pixels) / (tile_w * tile_h);
+
+
         // Scan every pixel position in the frame
         for (int y = frame_y; y <= frame_y + frame_h - tile_alpha_h; ++y) {
             for (int x = frame_x; x <= frame_x + frame_w - tile_alpha_w; ++x) {
                 unsigned char props = assetData->args->props_default;
                 bool matched = false;
-                
-                int threshold_pixels = assetData->args->match_threshold_pixels;
-                
                 // Try normal orientation
-                if (TileMatchesAtPosition(tile, assetData->image, x, y, tile_w, tile_h, threshold_pixels, non_transparent_count)) {
+                if (TileMatchesAtPosition(tile, assetData->image, x, y, tile_w, tile_h, adjusted_threshold)) {
                     matched = true;
                     props = assetData->args->props_default;
                 }
                 // Try flipped versions if enabled
                 else if (assetData->args->flip_tiles) {
-                    if (TileMatchesAtPositionFlipV(tile, assetData->image, x, y, tile_w, tile_h, threshold_pixels, non_transparent_count)) {
+                    if (TileMatchesAtPositionFlipV(tile, assetData->image, x, y, tile_w, tile_h, adjusted_threshold)) {
                         matched = true;
                         props = assetData->args->props_default | (1 << 5); // VFLIP
                     }
-                    else if (TileMatchesAtPositionFlipHV(tile, assetData->image, x, y, tile_w, tile_h, threshold_pixels, non_transparent_count)) {
+                    else if (TileMatchesAtPositionFlipHV(tile, assetData->image, x, y, tile_w, tile_h, adjusted_threshold)) {
                         matched = true;
                         props = assetData->args->props_default | (1 << 5) | (1 << 6); // VFLIP | HFLIP
                     }
-                    else if (TileMatchesAtPositionFlipH(tile, assetData->image, x, y, tile_w, tile_h, threshold_pixels, non_transparent_count)) {
+                    else if (TileMatchesAtPositionFlipH(tile, assetData->image, x, y, tile_w, tile_h, adjusted_threshold)) {
                         matched = true;
                         props = assetData->args->props_default | (1 << 6); // HFLIP
                     }
