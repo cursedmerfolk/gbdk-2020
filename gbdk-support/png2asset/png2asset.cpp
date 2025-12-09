@@ -66,7 +66,9 @@ int PNG2AssetData::Execute(PNG2AssetArguments* arguments, string  input_filename
         ExtractTileset(this, this->entity_tiles, true);
     } else if (this->args->processing_mode == MODE_SOURCE_TILESET) {
         // Source tileset extracts into the main shared tileset
-        ExtractTileset(this, this->tiles, this->args->keep_duplicate_tiles);
+        // For flexible tile matching, ALWAYS keep all tiles (never deduplicate) since tile indices matter
+        bool keep_all_tiles = this->args->flexible_tile_matching || this->args->keep_duplicate_tiles;
+        ExtractTileset(this, this->tiles, keep_all_tiles);
     } else if (this->args->export_as_map)
         GetMap(this);
     else

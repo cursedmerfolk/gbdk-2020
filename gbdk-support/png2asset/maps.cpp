@@ -55,12 +55,11 @@ void ExtractTileset(PNG2AssetData* assetData, vector< Tile > & tileset, bool kee
             assetData->image.ExtractTile(x, y, tile, assetData->args->sprite_mode, use_map_mode, use_map_attrs, assetData->args->bpp);
             
             // Debug: print palette for first few tiles
-            if (tile_count < 15) {
                 int pixel_idx = y * assetData->image.w + x;
                 printf("DEBUG: Tile %d at (%d,%d), pal=%d, first pixel_val=%d\n", 
                        tile_count, x, y, tile.pal, 
                        (pixel_idx < (int)assetData->image.data.size()) ? assetData->image.data[pixel_idx] : -1);
-            }
+
             tile_count++;
 
             if (keep_duplicate_tiles)

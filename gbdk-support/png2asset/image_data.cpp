@@ -204,7 +204,17 @@ int ReadImageData_Default(PNG2AssetData* assetData, string  input_filename) {
         return EXIT_FAILURE;
     }
 
-    int* palettes_per_tile = BuildPalettesAndAttributes(image32, assetData);
+    // For flexible tile matching mode on the main image, skip BuildPalettesAndAttributes
+    // since we're not extracting tiles at grid boundaries from the main image.
+    // Instead, we'll use the palettes from the source tileset.
+    int* palettes_per_tile = nullptr;
+    bool skip_palette_build = (assetData->args->processing_mode == MODE_MAIN_IMAGE) && 
+                              (assetData->args->flexible_tile_matching) &&
+                              (assetData->args->has_source_tilesets);
+    
+    if (!skip_palette_build) {
+        palettes_per_tile = BuildPalettesAndAttributes(image32, assetData);
+    }
 
     // Create the indexed image
     // Clearing is needed to ensure loading the png works
@@ -245,10 +255,37 @@ int ReadImageData_Default(PNG2AssetData* assetData, string  input_filename) {
         {
             unsigned char* c32ptr = &image32.data[(image32.w * y + x) * RGBA32_SZ];
             int color32 = (c32ptr[0] << 24) | (c32ptr[1] << 16) | (c32ptr[2] << 8) | c32ptr[3];
-            unsigned char palette = palettes_per_tile[(y / image32.tile_h) * (image32.w / image32.tile_w) + (x / image32.tile_w)];
-            unsigned char index = (unsigned char)std::distance(assetData->palettes[palette].begin(), assetData->palettes[palette].find(color32));
+            
+            unsigned char palette, index;
+            if (skip_palette_build) {
+                // For flexible tile matching, find the color in the combined palette from source tileset
+                // Search all palettes to find which one contains this color
+                bool found = false;
+                for (size_t p = 0; p < assetData->palettes.size() && !found; ++p) {
+                    SetPal::iterator it = assetData->palettes[p].find(color32);
+                    if (it != assetData->palettes[p].end()) {
+                        palette = (unsigned char)p;
+                        index = (unsigned char)std::distance(assetData->palettes[p].begin(), it);
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    // Color not found in any palette - this shouldn't happen if palettes match
+                    // Default to palette 0, index 0
+                    palette = 0;
+                    index = 0;
+                }
+            } else {
+                palette = palettes_per_tile[(y / image32.tile_h) * (image32.w / image32.tile_w) + (x / image32.tile_w)];
+                index = (unsigned char)std::distance(assetData->palettes[palette].begin(), assetData->palettes[palette].find(color32));
+            }
             assetData->image.data.push_back((palette << assetData->args->bpp) + index);
         }
+    }
+
+    // Clean up palettes_per_tile if it was allocated
+    if (palettes_per_tile != nullptr) {
+        delete[] palettes_per_tile;
     }
 
     //Test: output png to see how it looks
