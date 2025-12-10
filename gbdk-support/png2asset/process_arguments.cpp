@@ -495,13 +495,19 @@ int processPNG2AssetArguments(int argc, char* argv[], PNG2AssetArguments* args) 
         return EXIT_FAILURE;
     }
 
-    if (args->flexible_tile_matching && args->source_tilesets.size() == 0) {
-        printf("Error: \"-flexible_tile_matching\" requires \"-source_tileset\" to be specified\n");
-        return EXIT_FAILURE;
-    }
-
     // When using flexible tile matching, we need to export the tiles from the source tileset
-    if (args->flexible_tile_matching && args->source_tilesets.size() > 0) {
+    if (args->flexible_tile_matching) {
+
+        if (args->source_tilesets.size() == 0) {
+            printf("Error: \"-flexible_tile_matching\" requires \"-source_tileset\" to be specified\n");
+            return EXIT_FAILURE;
+        }
+
+        if (args->keep_palette_order) {
+            printf("Error: \"-flexible_tile_matching\" cannot be used with \"-keep_palette_order\" - source image will not be used for palette info.\n");
+            return EXIT_FAILURE;
+        }
+
         args->includeTileData = true;
         
         // Convert match_threshold percentage to pixel count

@@ -80,44 +80,6 @@ int ReadImageData_KeepPaletteOrder(  PNG2AssetData* assetData, string input_file
         if (assetData->image.source_tileset_palette) free(assetData->image.source_tileset_palette);
         assetData->image.source_tileset_palette = new unsigned char[assetData->image.total_color_count * RGBA32_SZ];
         memcpy(assetData->image.source_tileset_palette, state.info_png.color.palette, assetData->image.total_color_count * RGBA32_SZ);
-
-        // For source tilesets, we need to convert the indexed image data to GB format
-        // (with palette index encoded in upper bits). First expand to 32-bit RGBA,
-        // build palette mappings, then re-encode with palette info.
-        PNGImage image32;
-        image32.w = assetData->image.w;
-        image32.h = assetData->image.h;
-        image32.tile_w = assetData->image.tile_w;
-        image32.tile_h = assetData->image.tile_h;
-        image32.colors_per_pal = assetData->image.colors_per_pal;
-        image32.total_color_count = assetData->image.total_color_count;
-        
-        // Expand indexed data to RGBA32 using the palette
-        for(size_t i = 0; i < assetData->image.data.size(); ++i) {
-            unsigned char color_idx = assetData->image.data[i];
-            // Each palette entry is 4 bytes (RGBA)
-            image32.data.push_back(assetData->image.palette[color_idx * 4 + 0]); // R
-            image32.data.push_back(assetData->image.palette[color_idx * 4 + 1]); // G
-            image32.data.push_back(assetData->image.palette[color_idx * 4 + 2]); // B
-            image32.data.push_back(assetData->image.palette[color_idx * 4 + 3]); // A
-        }
-
-        // Build palette/tile mappings
-        int* palettes_per_tile = BuildPalettesAndAttributes(image32, assetData);
-
-        // Re-encode image data with palette info in upper bits
-        assetData->image.data.clear();
-        for(size_t y = 0; y < image32.h; ++y) {
-            for(size_t x = 0; x < image32.w; ++x) {
-                unsigned char* c32ptr = &image32.data[(image32.w * y + x) * RGBA32_SZ];
-                int color32 = (c32ptr[0] << 24) | (c32ptr[1] << 16) | (c32ptr[2] << 8) | c32ptr[3];
-                unsigned char palette = palettes_per_tile[(y / image32.tile_h) * (image32.w / image32.tile_w) + (x / image32.tile_w)];
-                unsigned char index = (unsigned char)std::distance(assetData->palettes[palette].begin(), assetData->palettes[palette].find(color32));
-                assetData->image.data.push_back((palette << assetData->args->bpp) + index);
-            }
-        }
-
-        delete[] palettes_per_tile;
     }
 
 
@@ -183,14 +145,9 @@ int ReadImageData_Default(PNG2AssetData* assetData, string  input_filename) {
         return EXIT_FAILURE;
     }
 
-    // For flexible tile matching mode on the main image, skip BuildPalettesAndAttributes
-    // since we're not extracting tiles at grid boundaries from the main image.
-    // Instead, we'll use the palettes from the source tileset.
-    int* palettes_per_tile = nullptr;
     bool skip_palette_build = (assetData->args->processing_mode == MODE_MAIN_IMAGE) && 
-                              (assetData->args->flexible_tile_matching) &&
-                              (assetData->args->has_source_tilesets);
-    
+                              (assetData->args->flexible_tile_matching);
+    int* palettes_per_tile = nullptr;
     if (!skip_palette_build) {
         palettes_per_tile = BuildPalettesAndAttributes(image32, assetData);
     }
@@ -235,24 +192,17 @@ int ReadImageData_Default(PNG2AssetData* assetData, string  input_filename) {
             unsigned char* c32ptr = &image32.data[(image32.w * y + x) * RGBA32_SZ];
             int color32 = (c32ptr[0] << 24) | (c32ptr[1] << 16) | (c32ptr[2] << 8) | c32ptr[3];
             
-            unsigned char palette, index;
+            unsigned char palette(0), index(0);
             if (skip_palette_build) {
                 // For flexible tile matching, find the color in the combined palette from source tileset
                 // Search all palettes to find which one contains this color
-                bool found = false;
-                for (size_t p = 0; p < assetData->palettes.size() && !found; ++p) {
+                for (size_t p = 0; p < assetData->palettes.size(); ++p) {
                     SetPal::iterator it = assetData->palettes[p].find(color32);
                     if (it != assetData->palettes[p].end()) {
                         palette = (unsigned char)p;
                         index = (unsigned char)std::distance(assetData->palettes[p].begin(), it);
-                        found = true;
+                        break;
                     }
-                }
-                if (!found) {
-                    // Color not found in any palette - this shouldn't happen if palettes match
-                    // Default to palette 0, index 0
-                    palette = 0;
-                    index = 0;
                 }
             } else {
                 palette = palettes_per_tile[(y / image32.tile_h) * (image32.w / image32.tile_w) + (x / image32.tile_w)];
@@ -262,10 +212,11 @@ int ReadImageData_Default(PNG2AssetData* assetData, string  input_filename) {
         }
     }
 
-    // Clean up palettes_per_tile if it was allocated
-    if (palettes_per_tile != nullptr) {
-        delete[] palettes_per_tile;
-    }
+    // Note: potential memory leak, palettes_per_tile isn't deleted anywhere
+    // uncomment to fix
+    // if (palettes_per_tile != nullptr) {
+    //     delete[] palettes_per_tile;
+    // }
 
     //Test: output png to see how it looks
     //Export(image, "temp.png");
