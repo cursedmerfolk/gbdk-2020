@@ -102,10 +102,14 @@ public:
         return (UL_notempty || LL_notempty || UR_notempty || LR_notempty);
     }
 
-    bool ExtractTile(int x, int y, Tile& tile, int sprite_mode, bool export_as_map, bool use_map_attributes, int bpp)
+    bool ExtractTile(int x, int y, Tile& tile, int sprite_mode, bool export_as_map, bool use_map_attributes, int bpp, bool flexible_tile_matching = false)
     {
         // Set the palette to 0 when pals are not stored in tiles to allow tiles to be equal even when their palettes are different
         zero_palette = !(export_as_map && !use_map_attributes);
+
+        if (flexible_tile_matching) {
+            zero_palette = false;
+        }
 
         if(sprite_mode == SPR_16x16_MSX)
             return ExtractTile_MSX16x16(x, y, tile, bpp);

@@ -28,20 +28,18 @@ void ExtractTileset(PNG2AssetData* assetData, vector< Tile > & tileset, bool kee
     size_t idx;
     unsigned char props;
 
-    // For source tilesets with flexible matching, we need to preserve palette info
-    // Treat as a map with attributes to keep palette data in tiles
-    bool preserve_palettes = (assetData->args->processing_mode == MODE_SOURCE_TILESET) && 
-                             (assetData->args->flexible_tile_matching);
-    bool use_map_mode = assetData->args->export_as_map || preserve_palettes;
-    bool use_map_attrs = assetData->args->use_map_attributes || preserve_palettes;
-
     for(int y = 0; y < (int)assetData->image.h; y += assetData->image.tile_h)
     {
         for(int x = 0; x < (int)assetData->image.w; x += assetData->image.tile_w)
         {
             // Get a tile from the image
             Tile tile(assetData->image.tile_w * assetData->image.tile_h);
-            assetData->image.ExtractTile(x, y, tile, assetData->args->sprite_mode, use_map_mode, use_map_attrs, assetData->args->bpp);
+            assetData->image.ExtractTile(x, y, tile,
+                                         assetData->args->sprite_mode,
+                                         assetData->args->export_as_map,
+                                         assetData->args->use_map_attributes,
+                                         assetData->args->bpp,
+                                         assetData->args->flexible_tile_matching);
 
             if (keep_duplicate_tiles)
                 tileset.push_back(tile);
