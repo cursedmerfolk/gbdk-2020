@@ -91,7 +91,7 @@ static void initArguments(PNG2AssetArguments* args) {
     args->use_structs = false;
     args->flip_tiles = true;
     args->flexible_tile_matching = false;
-    args->match_threshold_pixels = -1;  // Will be calculated after tile size is known
+    args->match_threshold_pixels = 100;  // Default 100%, will be calculated after tile size is known
     args->frame_debug_folder = "";
 
     // args->errorCode;
@@ -156,7 +156,7 @@ void showHelp(void) {
         printf("-metasprites_only   export metasprite descriptors only\n");
         printf("-source_tileset     use source tileset (image with common tiles)\n");
         printf("-flexible_tile_matching match tiles from source tileset at any pixel position (not grid-aligned)\n");
-        printf("-match_threshold <0.0-1.0> percentage of pixels that must match (default 1.0 = 100%%)\n");
+        printf("-match_threshold <0-100> percentage of pixels that must match (default: 100)\n");
         printf("-frame_debug <folder> output reconstructed PNG frames to specified folder for debugging\n");
         printf("-entity_tileset     (maps only) mark matching tiles counting from 255 down, entity patterns not exported\n");
         printf("-keep_duplicate_tiles   do not remove duplicate tiles (default: not enabled)\n");
@@ -379,11 +379,11 @@ static int processArguments(int startIndex, int argc, const char* argv[], PNG2As
         else if(!strcmp(argv[i], "-match_threshold")) {
             if(i < argc - 1) {
                 i++;
-                float threshold_percent = atof(argv[i]);
-                if (threshold_percent < 0.0f) threshold_percent = 0.0f;
-                if (threshold_percent > 1.0f) threshold_percent = 1.0f;
+                int threshold_percent = atoi(argv[i]);
+                if (threshold_percent < 0) threshold_percent = 0;
+                if (threshold_percent > 100) threshold_percent = 100;
                 // Store as negative to indicate it needs conversion (will convert after tile size known)
-                args->match_threshold_pixels = -(int)(threshold_percent * 1000.0f);  // Store as -1000*percent for later
+                args->match_threshold_pixels = threshold_percent;
             }
         }
         else if(!strcmp(argv[i], "-frame_debug")) {
@@ -516,14 +516,8 @@ int processPNG2AssetArguments(int argc, char* argv[], PNG2AssetArguments* args) 
         int tile_h = (args->sprite_mode == SPR_8x16) ? 16 : 8;
         int total_pixels = tile_w * tile_h;
 
-        if (args->match_threshold_pixels < 0 && args->match_threshold_pixels != -1) {
-            // Negative value means it's stored as -1000*percent
-            float threshold_percent = (float)(-args->match_threshold_pixels) / 1000.0f;
-            args->match_threshold_pixels = (int)(total_pixels * threshold_percent);
-        } else if (args->match_threshold_pixels == -1) {
-            // Not set, use 100% (all pixels must match)
-            args->match_threshold_pixels = total_pixels;
-        }
+        // Calculate pixel match threshold
+        args->match_threshold_pixels = (total_pixels * args->match_threshold_pixels) / 100;
     }
 
     return EXIT_SUCCESS;

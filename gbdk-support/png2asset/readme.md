@@ -64,21 +64,25 @@ When using `-source_tileset` with metasprites, you can enable `-flexible_tile_ma
 **Flexible tile matching** (with `-flexible_tile_matching`):
   - Tiles from the source tileset are scanned across the entire sprite frame at every pixel position
   - Transparent pixels (color index 0) in the tileset are ignored during matching
-  - Tiles are placed to maximize coverage while avoiding overlaps
+  - Tiles are placed to maximize coverage (sprites are allowed to overlap)
   - Useful for optimized sprite animations where tiles are positioned at sub-grid locations
+  - `-match_threshold` can be used to specify what percentage of a tileset tile should match for it to be used (0-100)
+    - Useful when tileset tiles overlap in the animation image.
+  
+**Frame Debug** (with `-frame_debug <out_folder>`):
+ - Reconstructs all metasprite frames and puts them in out_folder. 
+ - Displays a map from tileset tile -> position in the reconstructed frame using colored boxes.
+ - Useful to debug issues when there are more or less tileset tile matches than expected.
 
 **Example usage:**
 ```bash
 png2asset sprite_animation.png \
   -source_tileset optimized_tiles.png \
   -flexible_tile_matching \
+  -match_threshold 92 \
+  -frame_debug frame_output/ \
   -sw 24 -sh 32 \
-  -spr8x8 \
-  -keep_palette_order
+  -spr8x8
 ```
 
-This is particularly useful for sprite animations where:
-  - You've manually created an optimized tileset with the minimum number of unique tiles
-  - Tiles need to overlap or be positioned at non-standard locations between frames
-
-**Note:** Flexible tile matching requires both `-source_tileset` to be specified and works only with metasprite output (not maps).
+**Note:** Flexible tile matching requires `-source_tileset` to be specified and works only with metasprite output (not maps).
