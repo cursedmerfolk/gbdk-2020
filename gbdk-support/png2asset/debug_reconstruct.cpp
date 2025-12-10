@@ -32,14 +32,20 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
     int tile_h = assetData->image.tile_h;
     
     // Calculate tile palette area dimensions (right side)
-    int tiles_per_row = 8; // Show 8 tiles per row in the palette area
+    // Determine tiles_per_row so palette spans top-to-bottom with the frame
     int num_tiles = (int)sprite.size();
+    int frame_tiles_high = (frame_height + tile_h - 1) / tile_h;
+    int tiles_per_row = (num_tiles + frame_tiles_high - 1) / frame_tiles_high;
+    if (tiles_per_row < 1) tiles_per_row = 1; // At least 1 tile per row
+    
     int palette_rows = (num_tiles + tiles_per_row - 1) / tiles_per_row;
     int palette_area_width = tiles_per_row * tile_w;
     int palette_area_height = palette_rows * tile_h;
-    
+
+    const int tileset_pad = 8; // Padding between frame and palette area
+
     // Create output image buffer (RGBA) - frame on left, tile palette on right
-    int img_w = frame_width + palette_area_width;
+    int img_w = frame_width + palette_area_width + tileset_pad;
     int img_h = (frame_height > palette_area_height) ? frame_height : palette_area_height;
     vector<unsigned char> image_data(img_w * img_h * 4, 0);
     
@@ -244,7 +250,7 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
         // Calculate position in palette area (right side)
         int palette_col = i % tiles_per_row;
         int palette_row = i / tiles_per_row;
-        int palette_x = frame_width + palette_col * tile_w;
+        int palette_x = frame_width + palette_col * tile_w + tileset_pad;
         int palette_y = palette_row * tile_h;
         
         // Extract flip flags and palette
