@@ -145,7 +145,7 @@ int ReadImageData_Default(PNG2AssetData* assetData, string  input_filename) {
         return EXIT_FAILURE;
     }
 
-    bool skip_palette_build = (assetData->args->processing_mode == MODE_MAIN_IMAGE) && 
+    bool skip_palette_build = (assetData->args->processing_mode == MODE_MAIN_IMAGE) &&
                               (assetData->args->flexible_tile_matching);
     int* palettes_per_tile = nullptr;
     if (!skip_palette_build) {
@@ -191,7 +191,7 @@ int ReadImageData_Default(PNG2AssetData* assetData, string  input_filename) {
         {
             unsigned char* c32ptr = &image32.data[(image32.w * y + x) * RGBA32_SZ];
             int color32 = (c32ptr[0] << 24) | (c32ptr[1] << 16) | (c32ptr[2] << 8) | c32ptr[3];
-            
+
             unsigned char palette(0), index(0);
             if (skip_palette_build) {
                 // For flexible tile matching, find the color in the combined palette from source tileset

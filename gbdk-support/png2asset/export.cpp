@@ -64,7 +64,7 @@ void calc_palette_and_tileset_export_size(PNG2AssetData* assetData, exportOption
     // tiles that were present in the source tileset
     exportOptions->tiles_start = assetData->args->source_tileset_size;
     exportOptions->tiles_count = assetData->tiles.size() - assetData->args->source_tileset_size;
-    
+
     // For flexible tile matching, export all tiles including source tileset
     if (flexible_tile_matching) {
         exportOptions->tiles_start = 0;

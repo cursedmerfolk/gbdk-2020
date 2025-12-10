@@ -509,13 +509,13 @@ int processPNG2AssetArguments(int argc, char* argv[], PNG2AssetArguments* args) 
         }
 
         args->includeTileData = true;
-        
+
         // Convert match_threshold percentage to pixel count
         // Tile size depends on sprite mode
         int tile_w = 8;
         int tile_h = (args->sprite_mode == SPR_8x16) ? 16 : 8;
         int total_pixels = tile_w * tile_h;
-        
+
         if (args->match_threshold_pixels < 0 && args->match_threshold_pixels != -1) {
             // Negative value means it's stored as -1000*percent
             float threshold_percent = (float)(-args->match_threshold_pixels) / 1000.0f;
