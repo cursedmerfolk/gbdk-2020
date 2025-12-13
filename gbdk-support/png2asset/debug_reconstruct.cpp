@@ -110,12 +110,12 @@ void ReconstructMetaspriteFrame(PNG2AssetData* assetData, int frame_idx,
         int x_pos = current_x;
         int y_pos = current_y;
 
-        // Extract flip flags and palette
-        bool flip_x = (mt.props >> 6) & 1;
-        bool flip_y = (mt.props >> 5) & 1;
+        // Extract flip flags and palette (bit 5 = HFLIP, bit 6 = VFLIP)
+        bool flip_x = (mt.props >> 5) & 1;  // Horizontal flip (bit 5)
+        bool flip_y = (mt.props >> 6) & 1;  // Vertical flip (bit 6)
         int pal_idx = mt.props & 0xF;
 
-        printf("  Tile %2d: idx=%2d pos=(%3d,%3d) flip_x=%d flip_y=%d pal=%d\n",
+        printf("  Tile %2d: idx=%2d pos=(%3d,%3d) flip_h=%d flip_v=%d pal=%d\n",
                (int)i, tile_idx, x_pos, y_pos, flip_x, flip_y, pal_idx);
 
         const Tile& tile = assetData->tiles[tile_idx];

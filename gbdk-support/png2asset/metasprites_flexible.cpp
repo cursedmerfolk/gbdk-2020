@@ -216,15 +216,15 @@ void FindFlexibleTileMatches(PNG2AssetData* assetData,
                 else if (assetData->args->flip_tiles) {
                     if (TileMatchesAtPositionFlipV(tile, assetData->image, x, y, tile_w, tile_h, adjusted_threshold)) {
                         matched = true;
-                        props = assetData->args->props_default | (1 << 5); // VFLIP
+                        props = assetData->args->props_default | (1 << 6); // VFLIP
+                    }
+                    else if (TileMatchesAtPositionFlipH(tile, assetData->image, x, y, tile_w, tile_h, adjusted_threshold)) {
+                        matched = true;
+                        props = assetData->args->props_default | (1 << 5); // HFLIP
                     }
                     else if (TileMatchesAtPositionFlipHV(tile, assetData->image, x, y, tile_w, tile_h, adjusted_threshold)) {
                         matched = true;
                         props = assetData->args->props_default | (1 << 5) | (1 << 6); // VFLIP | HFLIP
-                    }
-                    else if (TileMatchesAtPositionFlipH(tile, assetData->image, x, y, tile_w, tile_h, adjusted_threshold)) {
-                        matched = true;
-                        props = assetData->args->props_default | (1 << 6); // HFLIP
                     }
                 }
 
